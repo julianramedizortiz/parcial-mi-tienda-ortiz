@@ -3,6 +3,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
+import { colors } from '@/constants/theme';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { useDbMigrations } from '@/hooks/useDbMigrations';
 
@@ -25,11 +26,18 @@ function RootNavigator() {
 
   const loggedIn = !!session;
   return (
-    <Stack>
+    <Stack
+      screenOptions={{
+        headerStyle: { backgroundColor: colors.primary },
+        headerTintColor: '#fff',
+        headerTitleStyle: { fontWeight: '700' },
+        headerShadowVisible: false,
+        contentStyle: { backgroundColor: colors.bg },
+      }}>
       {/* Sin sesión: solo Login y Registro */}
       <Stack.Protected guard={!loggedIn}>
-        <Stack.Screen name="login" options={{ title: 'Iniciar sesión' }} />
-        <Stack.Screen name="registro" options={{ title: 'Registro' }} />
+        <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="registro" options={{ headerShown: false }} />
       </Stack.Protected>
       {/* Con sesión: solo Principal y Formulario */}
       <Stack.Protected guard={loggedIn}>

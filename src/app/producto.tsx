@@ -1,7 +1,9 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { Banner, Button, Field } from '@/components/ui';
+import { colors, money, radius, shadow } from '@/constants/theme';
 import { productActions } from '@/hooks/useProducts';
 
 const isNonNegativeInt = (value: string) => /^\d+$/.test(value.trim());
@@ -40,40 +42,61 @@ export default function ProductoScreen() {
     router.back();
   };
 
+  const subtotal = isNonNegativeInt(quantity) && isNonNegativeInt(price) ? Number(quantity) * Number(price) : 0;
+
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Stack.Screen options={{ title: productId ? 'Editar producto' : 'Nuevo producto' }} />
-      <Text style={styles.label}>Nombre</Text>
-      <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Ej. Arroz 500 g" />
-      <Text style={styles.label}>Cantidad</Text>
-      <TextInput
-        style={styles.input}
-        value={quantity}
-        onChangeText={setQuantity}
-        keyboardType="number-pad"
-        placeholder="0"
-      />
-      <Text style={styles.label}>Precio (pesos)</Text>
-      <TextInput
-        style={styles.input}
-        value={price}
-        onChangeText={setPrice}
-        keyboardType="number-pad"
-        placeholder="0"
-      />
-      {error && <Text style={styles.error}>{error}</Text>}
-      <Pressable style={styles.button} onPress={onSave}>
-        <Text style={styles.buttonText}>Guardar</Text>
-      </Pressable>
-    </View>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <View style={styles.card}>
+          <Field label="Nombre" icon="pricetag-outline" value={name} onChangeText={setName} placeholder="Ej. Arroz 500 g" />
+          <View style={styles.row}>
+            <View style={styles.flex}>
+              <Field
+                label="Cantidad"
+                icon="cube-outline"
+                value={quantity}
+                onChangeText={setQuantity}
+                keyboardType="number-pad"
+                placeholder="0"
+              />
+            </View>
+            <View style={styles.flex}>
+              <Field
+                label="Precio (pesos)"
+                icon="cash-outline"
+                value={price}
+                onChangeText={setPrice}
+                keyboardType="number-pad"
+                placeholder="0"
+              />
+            </View>
+          </View>
+          <View style={styles.subtotal}>
+            <Text style={styles.subtotalLabel}>Valor en inventario</Text>
+            <Text style={styles.subtotalValue}>{money(subtotal)}</Text>
+          </View>
+        </View>
+        {error && <Banner kind="error" text={error} />}
+        <Button title={productId ? 'Guardar cambios' : 'Agregar producto'} icon="checkmark" onPress={onSave} />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, gap: 8, backgroundColor: '#fff' },
-  label: { fontWeight: '600', marginTop: 4 },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 12, fontSize: 16 },
-  error: { color: '#c62828' },
-  button: { backgroundColor: '#1976d2', padding: 14, borderRadius: 8, alignItems: 'center', marginTop: 8 },
-  buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  flex: { flex: 1, backgroundColor: colors.bg },
+  container: { padding: 16, gap: 14 },
+  card: { backgroundColor: colors.card, borderRadius: radius.lg, padding: 18, gap: 14, ...shadow },
+  row: { flexDirection: 'row', gap: 12 },
+  subtotal: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.sm,
+    padding: 12,
+  },
+  subtotalLabel: { color: colors.primaryDark, fontWeight: '600' },
+  subtotalValue: { color: colors.primaryDark, fontWeight: '800', fontSize: 18 },
 });

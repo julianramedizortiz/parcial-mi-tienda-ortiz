@@ -1,7 +1,10 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 
+import { AuthCard } from '@/components/AuthCard';
+import { Banner, Button, Field } from '@/components/ui';
+import { colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 
 export default function RegistroScreen() {
@@ -26,47 +29,45 @@ export default function RegistroScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Crear cuenta</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Correo"
+    <AuthCard title="Crear cuenta" subtitle="Regístrate para respaldar tu inventario">
+      <Field
+        label="Correo"
+        icon="mail-outline"
+        placeholder="tucorreo@ejemplo.com"
         autoCapitalize="none"
         keyboardType="email-address"
         value={email}
         onChangeText={setEmail}
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Contraseña (mínimo 6)"
+      <Field
+        label="Contraseña"
+        icon="lock-closed-outline"
+        placeholder="Mínimo 6 caracteres"
         secureTextEntry
         value={password}
         onChangeText={setPassword}
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Confirmar contraseña"
+      <Field
+        label="Confirmar contraseña"
+        icon="shield-checkmark-outline"
+        placeholder="Repite la contraseña"
         secureTextEntry
         value={confirm}
         onChangeText={setConfirm}
       />
-      {error && <Text style={styles.error}>{error}</Text>}
-      <Pressable style={styles.button} onPress={onSubmit} disabled={busy}>
-        {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Registrarme</Text>}
-      </Pressable>
-      <Link href="/login" style={styles.link}>
-        Ya tengo cuenta, volver al login
-      </Link>
-    </View>
+      {error && <Banner kind="error" text={error} />}
+      <Button title="Registrarme" icon="person-add-outline" onPress={onSubmit} loading={busy} />
+      <Text style={styles.footer}>
+        ¿Ya tienes cuenta?{' '}
+        <Link href="/login" style={styles.link}>
+          Volver al login
+        </Link>
+      </Text>
+    </AuthCard>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, justifyContent: 'center', gap: 12, backgroundColor: '#fff' },
-  title: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 12 },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 12, fontSize: 16 },
-  error: { color: '#c62828' },
-  button: { backgroundColor: '#1976d2', padding: 14, borderRadius: 8, alignItems: 'center' },
-  buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  link: { color: '#1976d2', textAlign: 'center', marginTop: 8 },
+  footer: { textAlign: 'center', color: colors.muted },
+  link: { color: colors.primary, fontWeight: '700' },
 });
