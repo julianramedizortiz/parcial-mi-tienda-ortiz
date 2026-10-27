@@ -2,8 +2,8 @@
 
 App móvil de inventario para la tienda de Doña Rosa (Riohacha). Funciona sin internet (SQLite es la fuente de verdad) y respalda los productos en Supabase al sincronizar.
 
-- **Nombre:** _TU NOMBRE COMPLETO_
-- **Código:** _TU CÓDIGO_
+- **Nombre:** Julián Ramediz Ortiz Ortiz
+- **Código:** 0182210071
 
 ## Stack
 
