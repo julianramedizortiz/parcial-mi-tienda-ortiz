@@ -1,98 +1,111 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
+import { productActions, useProducts } from '@/hooks/useProducts';
+import { syncProducts } from '@/services/sync';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+const money = (n: number) => '$' + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+export default function PrincipalScreen() {
+  const { session, signOut } = useAuth();
+  const { products, totalUnits, totalValue, pendingCount, isPending } = useProducts();
+  const [syncing, setSyncing] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const onSync = async () => {
+    if (!session) return;
+    setSyncing(true);
+    setMessage(null);
+    try {
+      const { uploaded, downloaded } = await syncProducts(session.user.id);
+      setMessage(`${uploaded} subidos, ${downloaded} bajados`);
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      setMessage(`No se pudo sincronizar (¿sin conexión?): ${detail}`);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const confirmDelete = (id: number, name: string) => {
+    Alert.alert('Eliminar producto', `¿Seguro que quieres eliminar "${name}"?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Eliminar', style: 'destructive', onPress: () => productActions.deleteProduct(id) },
+    ]);
+  };
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+    <View style={styles.container}>
+      <View style={styles.summary}>
+        <Text>Total unidades: {totalUnits}</Text>
+        <Text>Valor inventario: {money(totalValue)}</Text>
+        <Text>Pendientes por subir: {pendingCount}</Text>
+      </View>
 
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+      <View style={styles.row}>
+        <Pressable style={styles.button} onPress={onSync} disabled={syncing}>
+          {syncing ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Sincronizar</Text>}
+        </Pressable>
+        <Pressable style={styles.button} onPress={() => router.push('/producto')}>
+          <Text style={styles.buttonText}>Agregar</Text>
+        </Pressable>
+        <Pressable style={[styles.button, styles.logout]} onPress={signOut}>
+          <Text style={styles.buttonText}>Cerrar sesión</Text>
+        </Pressable>
+      </View>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+      {message && <Text style={styles.message}>{message}</Text>}
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+      <FlatList
+        data={products}
+        keyExtractor={(p) => String(p.id)}
+        ListEmptyComponent={<Text style={styles.empty}>No hay productos. Toca Agregar.</Text>}
+        renderItem={({ item }) => {
+          const pending = isPending(item);
+          return (
+            <Pressable
+              style={styles.item}
+              onPress={() => router.push({ pathname: '/producto', params: { id: String(item.id) } })}
+              onLongPress={() => confirmDelete(item.id, item.name)}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.itemName}>{item.name}</Text>
+                <Text>
+                  {item.quantity} und × {money(item.price)}
+                </Text>
+              </View>
+              <Text style={[styles.badge, pending ? styles.pending : styles.synced]}>
+                {pending ? 'pendiente' : 'en la nube'}
+              </Text>
+            </Pressable>
+          );
+        }}
+      />
+      <Text style={styles.hint}>Toca para editar · mantén presionado para eliminar</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
+  container: { flex: 1, padding: 16, gap: 12, backgroundColor: '#fff' },
+  summary: { backgroundColor: '#f1f5f9', padding: 12, borderRadius: 8, gap: 4 },
+  row: { flexDirection: 'row', gap: 8 },
+  button: { flex: 1, backgroundColor: '#1976d2', padding: 12, borderRadius: 8, alignItems: 'center' },
+  logout: { backgroundColor: '#757575' },
+  buttonText: { color: '#fff', fontWeight: 'bold', textAlign: 'center' },
+  message: { textAlign: 'center', fontWeight: '600' },
+  empty: { textAlign: 'center', color: '#777', marginTop: 24 },
+  item: {
     flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
     alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
+    padding: 12,
+    borderBottomWidth: 1,
+    borderColor: '#eee',
   },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
+  itemName: { fontSize: 16, fontWeight: 'bold' },
+  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, fontSize: 12, overflow: 'hidden' },
+  pending: { backgroundColor: '#fff3cd', color: '#8a6d00' },
+  synced: { backgroundColor: '#d1f2d9', color: '#1b6e33' },
+  hint: { textAlign: 'center', color: '#999', fontSize: 12 },
 });
