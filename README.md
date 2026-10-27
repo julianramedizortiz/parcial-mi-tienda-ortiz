@@ -91,4 +91,4 @@ drizzle/            migraciones generadas
 ## Qué faltó
 
 - Puntos extra no implementados: borrado sincronizado (`deletedAt`) y sincronización automática al recuperar conexión.
-- _Completar según tus pruebas._
+- Probado en Android con Expo Go: login, registro, CRUD en modo avión y sincronización funcionan.
