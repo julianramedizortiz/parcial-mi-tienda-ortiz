@@ -44,13 +44,19 @@ export async function getPendingProducts() {
     .where(or(isNull(products.syncedAt), lt(products.syncedAt, products.updatedAt)));
 }
 
-export async function getExistingClientIds(clientIds: string[]) {
-  if (clientIds.length === 0) return new Set<string>();
-  const rows = await db
-    .select({ clientId: products.clientId })
-    .from(products)
-    .where(inArray(products.clientId, clientIds));
-  return new Set(rows.map((r) => r.clientId));
+/** Productos locales que ya existen, indexados por clientId. */
+export async function getLocalByClientIds(clientIds: string[]) {
+  if (clientIds.length === 0) return new Map<string, Product>();
+  const rows = await db.select().from(products).where(inArray(products.clientId, clientIds));
+  return new Map(rows.map((r) => [r.clientId, r]));
+}
+
+/** "Gana el último cambio": la versión de la nube reemplaza la local y queda sincronizada. */
+export async function updateFromCloud(id: number, p: ProductInput & { updatedAt: Date }) {
+  await db
+    .update(products)
+    .set({ ...p, syncedAt: p.updatedAt })
+    .where(eq(products.id, id));
 }
 
 /** Inserta un producto que viene de la nube, ya marcado como sincronizado. */

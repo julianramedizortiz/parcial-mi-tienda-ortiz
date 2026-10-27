@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { AppState } from 'react-native';
 
 import { secureStorage } from './secureStorage';
 
@@ -12,4 +13,10 @@ export const supabase = createClient(url, publishableKey, {
     persistSession: true,
     detectSessionInUrl: false,
   },
+});
+
+// Renueva el token solo mientras la app está en primer plano
+AppState.addEventListener('change', (state) => {
+  if (state === 'active') supabase.auth.startAutoRefresh();
+  else supabase.auth.stopAutoRefresh();
 });

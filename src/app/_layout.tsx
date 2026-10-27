@@ -1,12 +1,10 @@
-import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { AuthProvider, useAuth } from '@/context/AuthContext';
-import { db } from '@/db/client';
-import migrations from '../../drizzle/migrations';
+import { useDbMigrations } from '@/hooks/useDbMigrations';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -43,7 +41,7 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
-  const { success, error } = useMigrations(db, migrations);
+  const { success, error } = useDbMigrations();
 
   if (error) {
     return (

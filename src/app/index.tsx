@@ -1,18 +1,23 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useAuth } from '@/context/AuthContext';
 import { productActions, useProducts } from '@/hooks/useProducts';
 import { syncProducts } from '@/services/sync';
 
 const money = (n: number) => '$' + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 export default function PrincipalScreen() {
   const { session, signOut } = useAuth();
   const { products, totalUnits, totalValue, pendingCount, isPending } = useProducts();
   const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+
+  // Extra: búsqueda por nombre (los totales siguen siendo de todo el inventario)
+  const visible = products.filter((p) => p.name.toLowerCase().includes(search.trim().toLowerCase()));
 
   const onSync = async () => {
     if (!session) return;
@@ -20,7 +25,7 @@ export default function PrincipalScreen() {
     setMessage(null);
     try {
       const { uploaded, downloaded } = await syncProducts(session.user.id);
-      setMessage(`${uploaded} subidos, ${downloaded} bajados`);
+      setMessage(`${plural(uploaded, 'subido')}, ${plural(downloaded, 'bajado')}`);
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);
       setMessage(`No se pudo sincronizar (¿sin conexión?): ${detail}`);
@@ -58,10 +63,12 @@ export default function PrincipalScreen() {
 
       {message && <Text style={styles.message}>{message}</Text>}
 
+      <TextInput style={styles.search} placeholder="Buscar por nombre" value={search} onChangeText={setSearch} />
+
       <FlatList
-        data={products}
+        data={visible}
         keyExtractor={(p) => String(p.id)}
-        ListEmptyComponent={<Text style={styles.empty}>No hay productos. Toca Agregar.</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>No hay productos.</Text>}
         renderItem={({ item }) => {
           const pending = isPending(item);
           return (
@@ -95,6 +102,7 @@ const styles = StyleSheet.create({
   logout: { backgroundColor: '#757575' },
   buttonText: { color: '#fff', fontWeight: 'bold', textAlign: 'center' },
   message: { textAlign: 'center', fontWeight: '600' },
+  search: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10 },
   empty: { textAlign: 'center', color: '#777', marginTop: 24 },
   item: {
     flexDirection: 'row',
