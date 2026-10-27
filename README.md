@@ -1,56 +1,64 @@
-# Welcome to your Expo app 👋
+# Mi Tienda — Parcial
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+App móvil de inventario para la tienda de Doña Rosa (Riohacha). Funciona sin internet (SQLite es la fuente de verdad) y respalda los productos en Supabase al sincronizar.
 
-## Get started
+- **Nombre:** _TU NOMBRE COMPLETO_
+- **Código:** _TU CÓDIGO_
 
-1. Install dependencies
+## Stack
 
+Expo SDK 58 + TypeScript · Expo Router (`Stack.Protected`) · `expo-sqlite` + Drizzle ORM · Supabase (Auth + tabla `products`) · `expo-secure-store` · `expo-crypto`
+
+## Cómo ejecutar
+
+1. Crear `.env` en la raíz (copiar `.env.example`) con los datos del proyecto de Supabase:
+   ```
+   EXPO_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+   EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxxx
+   ```
+2. En Supabase → SQL Editor, ejecutar el SQL de la tabla `products` con RLS (ver instrucciones del parcial).
+3. En Supabase → Authentication → Email, desactivar **Confirm email**.
+4. Instalar y ejecutar:
    ```bash
    npm install
-   ```
-
-2. Start the app
-
-   ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+Las migraciones locales están en `drizzle/` y se aplican solas al abrir la app (`useMigrations`). Si se cambia `src/db/schema.ts`: `npx drizzle-kit generate`.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Estructura
 
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+src/app/            pantallas (login, registro, index, producto) y _layout con Stack.Protected
+src/db/             schema.ts, client.ts, repositories/products.ts
+src/hooks/          useProducts.ts (lista en vivo + totales)
+src/lib/            supabase.ts, secureStorage.ts (SecureStore por fragmentos)
+src/context/        AuthContext.tsx
+src/services/       sync.ts (syncProducts: bajar y luego subir)
+drizzle/            migraciones generadas
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+## Capturas
 
-### Other setup steps
+![Login](capturas/01-login.png)
+![Registro](capturas/02-registro.png)
+![Principal](capturas/03-principal.png)
+![Formulario](capturas/04-formulario.png)
+![Sin conexión](capturas/05-sin-conexion.png)
+![Sincronizado](capturas/06-sincronizado.png)
+![Supabase](capturas/07-supabase.png)
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Qué funciona
 
-## Learn more
+- Login, registro (correo, contraseña ≥ 6, confirmación) y cerrar sesión con Supabase Auth.
+- Sesión persistente en SecureStore (adaptador por fragmentos); rutas protegidas con `Stack.Protected`.
+- CRUD local en SQLite con Drizzle; lista reactiva con `useLiveQuery`; funciona en modo avión.
+- Totales: unidades, valor del inventario y pendientes por subir.
+- Indicador por producto: **en la nube** / **pendiente**.
+- Eliminar con confirmación (mantener presionado → `Alert`).
+- Sincronizar: baja productos que faltan en el teléfono y sube pendientes con `upsert` por `client_id`; muestra "X subidos, Y bajados" o el error.
 
-To learn more about developing your project with Expo, look at the following resources:
+## Qué faltó
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Puntos extra no implementados: borrado sincronizado, "gana el último cambio", sincronización automática y búsqueda.
+- _Completar según tus pruebas._
